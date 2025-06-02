@@ -1,0 +1,73 @@
+services:
+  c01:
+    build:
+      context: .
+      dockerfile: Dockerfile-c01
+    ports:
+      - "7000:7000"
+      - "5432:5432"
+    hostname: c01
+    networks:
+      - internal-networks
+    depends_on:
+      - c02
+  c02:
+    image: rabbitmq:4.1
+    hostname: c02
+    ports:
+      - "5672:5672"
+    networks:
+      - internal-networks
+  c03:
+    build:
+      context: .
+      dockerfile: Dockerfile-c03
+    hostname: c03
+    depends_on:
+      - c02
+      - c04
+      - c05
+    networks:
+      - internal-networks
+    volumes:
+      - ssh_keys:/shared_keys
+  c04:
+    build:
+      context: .
+      dockerfile: Dockerfile-c04
+    hostname: c04
+    networks:
+      - internal-networks
+    volumes:
+      - ssh_keys:/shared_keys
+    ports:
+      - "2222:22"
+  c05:
+    build:
+      context: .
+      dockerfile: Dockerfile-c05
+    hostname: c05
+    networks:
+      - internal-networks
+    ports:
+      - "3000:3000"
+    depends_on:
+      - c06
+  c06:
+    image: mongo
+    restart: always
+    hostname: c06
+    ports:
+      - "27017:27017"
+    networks:
+      - internal-networks
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+
+networks:
+  internal-networks:
+    driver: bridge
+  
+volumes:
+  ssh_keys:

@@ -3,6 +3,43 @@
   let selectedMode: 'ECB' | 'CBC' | '' = $state('');
   let file: File | null = $state(null);
   let key: string = $state('');
+  let responseFromServer: string | null = $state(null);
+
+  let ws = $state<WebSocket | null>(null);
+  $effect(() => {
+    if (!ws || ws.readyState === WebSocket.CLOSED) {
+      ws = new WebSocket("ws://localhost:7000/ws");
+      ws.onopen = () => {
+        console.log("WebSocket connection established");
+        console.log("Setting userId to localStorage");
+        if (!localStorage.getItem("userId")) {
+          console.log("No userId found in localStorage, generating a new one");
+          const userId = Math.random().toString(36).substring(2, 15);
+          localStorage.setItem("userId", userId);
+          ws.send(JSON.stringify({ action: "setUserId", data: userId }));
+        } else {
+          console.log("Found userId in localStorage:", localStorage.getItem("userId"));
+          ws.send(JSON.stringify({ action: "setUserId", data: localStorage.getItem("userId") }));
+        }
+      };
+      ws.onclose = () => {
+        console.log("WebSocket connection closed");
+      };
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+      ws.onmessage = (event) => {
+        console.log("message received from server:", event.data);
+        responseFromServer = event.data;
+      }
+    }
+    
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    }
+  });
 
   const AVAILABLE_MODES = ['ECB', 'CBC'];
   const AVAILABLE_OPERATIONS = [{
@@ -41,12 +78,13 @@
     const base64Image = await convertToBase64(file);
 
     try {
-        const response = await fetch('http://localhost:8080/api/recv-img', {
+        const response = await fetch('http://localhost:7000/api/recv-img', {
           method: "POST",
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
+            userId: localStorage.getItem("userId"),
             imageName: file.name,
             base64Image: base64Image,
             operation: selectedOperation,
@@ -58,12 +96,17 @@
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-
-        const result = await response.json();
-        console.info(result.result);
     } catch (error) {
         console.error('Error uploading file:', error);
-        alert('An error occurred while uploading the file.');
+    }
+  }
+
+  const downloadImageFromServer = () => {
+    if (responseFromServer) {
+      const link = document.createElement('a');
+      link.href = `http://localhost:3000/download-file/${localStorage.getItem("userId")}/${responseFromServer.split(",")[1]}`;
+      link.click();
+      link.remove();
     }
   }
 </script>
@@ -131,5 +174,17 @@
         {/if}
       </button>
     </form>
+
+    {#if responseFromServer}
+      <div class="mt-4 text-green-600">
+        <p>{responseFromServer}</p>
+      </div>
+      <button 
+        class="mt-2 bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition-colors duration-200" 
+        onclick={() => downloadImageFromServer()}
+      >
+        Download image
+      </button>
+    {/if}
   </section>
 </main>

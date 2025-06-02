@@ -1,0 +1,42 @@
+FROM critoma/amd64_u24_noble_ism_security
+
+ENV SHELL=/bin/bash
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    mpich \
+    openssh-server \
+    cmake \
+    libopenmpi-dev \
+    openmpi-bin \
+    openssh-client \
+    libssl-dev
+
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_config.new && \
+    echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config.new && \
+    echo "    UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config.new && \
+    mv /etc/ssh/ssh_config.new /etc/ssh/ssh_config
+
+RUN mkdir -p /root/.ssh && \
+    touch /root/.ssh/authorized_keys && \
+    chmod 700 /root/.ssh && \
+    ssh-keygen -t rsa -b 4096 -f /root/.ssh/id_rsa -N ""
+
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+WORKDIR /app
+COPY testing/main.cpp /app
+COPY testing/CMakeLists.txt /app
+COPY testing/person.jpg /app
+
+RUN cd /app && \
+    mkdir -p build && \
+    cmake . && \
+    make
+
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -1,0 +1,3 @@
+/home/joylunow/DistributedAndParallelSystemsProject/c03-04-openmpi-openmp-c/build/CMakeFiles/executable_mpi.dir
+/home/joylunow/DistributedAndParallelSystemsProject/c03-04-openmpi-openmp-c/build/CMakeFiles/edit_cache.dir
+/home/joylunow/DistributedAndParallelSystemsProject/c03-04-openmpi-openmp-c/build/CMakeFiles/rebuild_cache.dir

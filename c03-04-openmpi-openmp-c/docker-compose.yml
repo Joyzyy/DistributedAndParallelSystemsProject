@@ -1,0 +1,29 @@
+services:
+  c03:
+    build: .
+    container_name: c03
+    hostname: c03
+    networks:
+      - mpi_network
+    volumes:
+      - ssh_keys:/shared_keys
+    depends_on:
+      - c04
+
+  c04:
+    build: .
+    container_name: c04
+    hostname: c04
+    networks:
+      - mpi_network
+    volumes:
+      - ssh_keys:/shared_keys
+    ports:
+      - "2222:22"
+
+networks:
+  mpi_network:
+    driver: bridge
+
+volumes:
+  ssh_keys:

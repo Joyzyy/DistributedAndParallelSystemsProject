@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="RemoteTargetsManager">
-    <option name="projectDefaultTargetUuid" value="00e9ceac-82bb-427d-bf8b-81594a1b608e" />
+    <option name="projectDefaultTargetUuid" value="f9c08ea2-07d8-4b96-8bbe-b6157bd59474" />
     <targets>
-      <target name="WSL" type="wsl" uuid="00e9ceac-82bb-427d-bf8b-81594a1b608e">
+      <target name="WSL" type="wsl" uuid="f9c08ea2-07d8-4b96-8bbe-b6157bd59474">
         <config>
           <option name="distributionMsId" value="Ubuntu" />
         </config>

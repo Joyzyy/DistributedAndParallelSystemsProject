@@ -1,0 +1,64 @@
+FROM critoma/amd64_u24_noble_ism_security
+
+ENV SHELL=/bin/bash
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y default-jre-headless \
+    maven \
+    curl \
+    supervisor \
+    unzip &&  \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+RUN curl -o- https://fnm.vercel.app/install | bash && \
+    export PATH="/root/.local/share/fnm:$PATH" && \
+    eval "`fnm env`" && \
+    fnm install --lts && \
+    fnm use lts-latest
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.local/share/fnm:/root/.bun/bin:$PATH"
+
+WORKDIR /app
+
+# build java backend
+COPY ./c01-javalin-http-server/pom.xml /app/javalin-http-server/pom.xml
+WORKDIR /app/javalin-http-server
+RUN mvn dependency:go-offline
+
+COPY ./c01-javalin-http-server/src /app/javalin-http-server/src
+RUN mvn package
+
+# build svelte frontend
+WORKDIR /app
+COPY ./c01-fe/ /app/c01-fe
+WORKDIR /app/c01-fe
+RUN bun install && bun run build
+
+# create supervisor config
+RUN mkdir -p /etc/supervisor/conf.d
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+
+[program:javalin-http-server]
+command=mvn exec:java -Dexec.mainClass=MainKt
+directory=/app/javalin-http-server
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/javalin-http-server.log
+stderr_logfile=/var/log/javalin-http-server.err.log
+
+[program:svelte-frontend]
+command=bun run preview --host 0.0.0.0 --port 5432
+directory=/app/c01-fe
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/svelte-frontend.log
+stderr_logfile=/var/log/svelte-frontend.err.log
+EOF
+
+EXPOSE 7000
+EXPOSE 5432
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
