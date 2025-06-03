@@ -85,12 +85,15 @@ fun main() {
         config.bundledPlugins.enableCors{ cors ->
             cors.addRule { it ->
                 it.anyHost()
+                it.exposeHeader("*")
             }
         }
         config.jetty.modifyWebSocketServletFactory { factory ->
             factory.idleTimeout = java.time.Duration.ofMinutes(30L)
         }
         config.http.maxRequestSize = 100_000_000L
+    }.get("/") { ctx ->
+        ctx.result("Javalin server is running!")
     }.post("/api/recv-img"){ ctx ->
         val body = ctx.bodyAsClass<RecieveImageJsonBody>()
         userPostsMap[body.userId] = mutableListOf("${body.operation}.${body.mode}.${body.imageName.split(".")[0]}")
@@ -118,5 +121,5 @@ fun main() {
                 wsContexts[body.data] = ctx
             }
         }
-    }.start(7000)
+    }.start("0.0.0.0", 7777)
 }

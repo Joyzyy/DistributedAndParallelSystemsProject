@@ -4,11 +4,12 @@
   let file: File | null = $state(null);
   let key: string = $state('');
   let responseFromServer: string | null = $state(null);
+  let closedWSConn: boolean | null = $state(null);
 
   let ws = $state<WebSocket | null>(null);
   $effect(() => {
     if (!ws || ws.readyState === WebSocket.CLOSED) {
-      ws = new WebSocket("ws://localhost:7000/ws");
+      ws = new WebSocket("ws://localhost:7777/ws");
       ws.onopen = () => {
         console.log("WebSocket connection established");
         console.log("Setting userId to localStorage");
@@ -23,6 +24,7 @@
         }
       };
       ws.onclose = () => {
+        closedWSConn = true;
         console.log("WebSocket connection closed");
       };
       ws.onerror = (error) => {
@@ -78,7 +80,7 @@
     const base64Image = await convertToBase64(file);
 
     try {
-        const response = await fetch('http://localhost:7000/api/recv-img', {
+        const response = await fetch('http://localhost:7777/api/recv-img', {
           method: "POST",
           headers: {
             'Content-Type': 'application/json'
@@ -185,6 +187,11 @@
       >
         Download image
       </button>
+    {/if}
+    {#if closedWSConn}
+      <div class="mt-4 text-red-600">
+        <p>WS conn has failed (need to wait for javalin server to start...), please reload the page!</p>
+      </div>
     {/if}
   </section>
 </main>

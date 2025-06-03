@@ -17,7 +17,7 @@ The system consists of 6 main services orchestrated using Docker Compose:
 
 - **c01**: Frontend & Backend Gateway
   - Svelte TypeScript frontend (port 5432)
-  - Javalin HTTP server backend (port 7000)
+  - Javalin HTTP server backend (port 7777)
   - Entry point for user interactions
 
 - **c02**: Message Queue
@@ -87,7 +87,7 @@ The system consists of 6 main services orchestrated using Docker Compose:
 
 3. **Access the application**
    - Frontend: http://localhost:5432
-   - Backend API: http://localhost:7000
+   - Backend API: http://localhost:7777
    - Node.js API: http://localhost:3000
    - MongoDB: mongodb://localhost:27017
 
@@ -112,7 +112,7 @@ The system consists of 6 main services orchestrated using Docker Compose:
 
 ## Known Issues
 
-- Frontend may require incognito/private browsing mode in some browsers when using WSL
+- Errors not logged properly and not shown to users
 - File names with special characters may cause processing issues
 - SSH connectivity between containers may take a few seconds to establish
 

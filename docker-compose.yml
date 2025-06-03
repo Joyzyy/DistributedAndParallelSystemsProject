@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile-c01
     ports:
-      - "7000:7000"
+      - "7777:7777"
       - "5432:5432"
     hostname: c01
     networks:

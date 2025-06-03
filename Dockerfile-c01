@@ -7,7 +7,6 @@ RUN apt-get update && \
     apt-get install -y default-jre-headless \
     maven \
     curl \
-    supervisor \
     unzip &&  \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -35,30 +34,46 @@ COPY ./c01-fe/ /app/c01-fe
 WORKDIR /app/c01-fe
 RUN bun install && bun run build
 
-# create supervisor config
-RUN mkdir -p /etc/supervisor/conf.d
-COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
-[supervisord]
-nodaemon=true
+# create startup script
+COPY <<EOF /app/start.sh
+#!/bin/bash
+set -e
 
-[program:javalin-http-server]
-command=mvn exec:java -Dexec.mainClass=MainKt
-directory=/app/javalin-http-server
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/javalin-http-server.log
-stderr_logfile=/var/log/javalin-http-server.err.log
+echo "Starting services..."
 
-[program:svelte-frontend]
-command=bun run preview --host 0.0.0.0 --port 5432
-directory=/app/c01-fe
-autostart=true
-autorestart=true
-stdout_logfile=/var/log/svelte-frontend.log
-stderr_logfile=/var/log/svelte-frontend.err.log
+# Start Javalin backend in background
+cd /app/javalin-http-server
+mvn exec:java -Dexec.mainClass=MainKt > /var/log/javalin.log 2>&1 &
+JAVALIN_PID=\$!
+echo "Javalin started with PID \$JAVALIN_PID"
+
+# Start Svelte frontend in background
+cd /app/c01-fe
+python3 -m http.server 5432 --bind 0.0.0.0 --directory dist > /var/log/svelte.log 2>&1 &
+SVELTE_PID=\$!
+echo "Svelte frontend started with PID \$SVELTE_PID"
+
+# Function to handle shutdown
+cleanup() {
+    echo "Shutting down services..."
+    kill \$JAVALIN_PID \$SVELTE_PID 2>/dev/null || true
+    wait
+    exit 0
+}
+
+# Set up signal handlers
+trap cleanup SIGTERM SIGINT
+
+echo "Both services are running. Javalin PID: \$JAVALIN_PID, Svelte PID: \$SVELTE_PID"
+echo "Logs: /var/log/javalin.log and /var/log/svelte.log"
+
+# Wait for both processes
+wait
 EOF
 
-EXPOSE 7000
+RUN chmod +x /app/start.sh
+
+EXPOSE 7777
 EXPOSE 5432
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/app/start.sh"]
