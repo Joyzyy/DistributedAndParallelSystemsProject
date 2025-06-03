@@ -4,6 +4,9 @@ A multi-service distributed application demonstrating various parallel computing
 
 ## Project Overview
 
+Diagram:
+![diagram](diagram.png "Project Diagram")
+
 This project implements a distributed system with multiple interconnected services that handle image processing operations using different parallel computing approaches including OpenMPI, OpenMP, and distributed messaging.
 
 ## Architecture
